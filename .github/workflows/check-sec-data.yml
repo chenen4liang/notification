@@ -1,0 +1,37 @@
+name: Check SEC Form 13F Data
+
+on:
+  schedule:
+    # Run every hour at minute 0
+    - cron: '0 * * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  check-sec-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Check SEC data and notify
+      env:
+        discordChannel: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        echo "=== SEC Check Started at $(date -u '+%Y-%m-%d %H:%M:%S UTC') ===" | tee check.log
+        python check_and_notify.py 2025-07 --notify-only-if-available 2>&1 | tee -a check.log
+        echo "=== SEC Check Completed at $(date -u '+%Y-%m-%d %H:%M:%S UTC') ===" | tee -a check.log
+    
+    - name: Upload logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: sec-check-log-${{ github.run_number }}
+        path: check.log
+        retention-days: 7
+    

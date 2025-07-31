@@ -1,0 +1,63 @@
+name: SEC Form 13F Data Monitor
+
+on:
+  schedule:
+    # Run every hour at minute 15 (to avoid high load at minute 0)
+    - cron: '15 * * * *'
+  workflow_dispatch:  # Allow manual trigger
+    inputs:
+      month:
+        description: 'Month to check (yyyy-mm format)'
+        required: false
+        default: '2025-07'
+        type: string
+      notify_always:
+        description: 'Send notification even if no data'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  check-sec-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Determine month to check
+      id: get-month
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.month }}" ]; then
+          echo "month=${{ inputs.month }}" >> $GITHUB_OUTPUT
+          echo "Checking month: ${{ inputs.month }}"
+        else
+          # Default to July 2025 for scheduled runs
+          echo "month=2025-07" >> $GITHUB_OUTPUT
+          echo "Checking month: 2025-07"
+        fi
+    
+    - name: Check SEC data (scheduled/dispatch with notify-only-if-available)
+      if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.notify_always) }}
+      env:
+        discordChannel: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        python check_and_notify.py ${{ steps.get-month.outputs.month }} --notify-only-if-available
+    
+    - name: Check SEC data (manual with always notify)
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.notify_always }}
+      env:
+        discordChannel: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        python check_and_notify.py ${{ steps.get-month.outputs.month }}
+    
+    - name: Log check result
+      if: always()
+      run: |
+        echo "Check completed at $(date)"
+        echo "Exit code: ${{ job.status }}"
