@@ -19,34 +19,12 @@ jobs:
       with:
         python-version: '3.11'
     
-    - name: Restore notification history
-      uses: actions/cache@v4
-      with:
-        path: .notification_sent
-        key: notification-sent-2025-07
-        restore-keys: notification-sent-
-    
     - name: Check SEC data and notify
       env:
         discordChannel: ${{ secrets.DISCORD_WEBHOOK }}
       run: |
         echo "=== SEC Check Started at $(date -u '+%Y-%m-%d %H:%M:%S UTC') ===" | tee check.log
-        
-        # Check if we already sent notification
-        if [ -f .notification_sent ]; then
-          echo "✅ Notification already sent for 2025-07. Checking data only." | tee -a check.log
-          python check_sec.py 2025-07 | tee -a check.log
-        else
-          echo "📋 No previous notification sent. Checking and will notify if available." | tee -a check.log
-          python check_and_notify.py 2025-07 --notify-only-if-available 2>&1 | tee -a check.log
-          
-          # If data was found, mark as notified
-          if python check_sec.py 2025-07 | grep -q "true"; then
-            echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC')" > .notification_sent
-            echo "✅ Notification sent and recorded!" | tee -a check.log
-          fi
-        fi
-        
+        python check_and_notify.py 2025-07 --notify-only-if-available 2>&1 | tee -a check.log
         echo "=== SEC Check Completed at $(date -u '+%Y-%m-%d %H:%M:%S UTC') ===" | tee -a check.log
     
     - name: Upload logs
