@@ -1,0 +1,55 @@
+name: Property Tax Reminders
+
+on:
+  schedule:
+    # November 1st at 9:00 AM UTC - First installment due
+    - cron: '0 9 1 11 *'
+    # February 1st at 9:00 AM UTC - Second installment due
+    - cron: '0 9 1 2 *'
+  workflow_dispatch:  # Allow manual trigger for testing
+
+jobs:
+  send-tax-reminder:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Determine which installment
+      id: installment
+      run: |
+        MONTH=$(date +%m)
+        if [ "$MONTH" = "11" ]; then
+          echo "installment=first" >> $GITHUB_OUTPUT
+          echo "number=1st" >> $GITHUB_OUTPUT
+          echo "delinquent=December 10th" >> $GITHUB_OUTPUT
+        else
+          echo "installment=second" >> $GITHUB_OUTPUT
+          echo "number=2nd" >> $GITHUB_OUTPUT
+          echo "delinquent=April 10th" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Send property tax reminder
+      env:
+        discordChannel: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        python send_discord_notification.py "🏠 **Property Tax Reminder**
+
+📅 **${{ steps.installment.outputs.number }} Installment Due Today!**
+
+Today is the due date for your property tax ${{ steps.installment.outputs.installment }} installment.
+
+⚠️ **Important Dates:**
+• Due: **Today**
+• Delinquent: **${{ steps.installment.outputs.delinquent }}** (5:00 PM)
+• Penalty: 10% if paid after delinquent date
+
+💡 You have until ${{ steps.installment.outputs.delinquent }} to pay without penalty.
+
+🔗 Pay online at: https://sanmateo-ca.county-taxes.com/"
