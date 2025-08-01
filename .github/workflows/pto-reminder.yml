@@ -1,0 +1,30 @@
+name: PTO Reminder
+
+on:
+  schedule:
+    # Run on July 31st at 9:00 AM UTC
+    - cron: '0 9 31 7 *'
+  workflow_dispatch:  # Allow manual trigger for testing
+
+jobs:
+  send-pto-reminder:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Send PTO notification
+      env:
+        discordChannel: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        python send_discord_notification.py "🏖️ **Start of PTO!**
+        
+        Today is July 31st - Time to start your vacation! 🎉
+        
+        Enjoy your time off! 🌴☀️"
