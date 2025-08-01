@@ -23,8 +23,15 @@ jobs:
       env:
         discordChannel: ${{ secrets.DISCORD_WEBHOOK }}
       run: |
+        # Debug: Check if webhook is set
+        if [ -z "$discordChannel" ]; then
+          echo "Error: Discord webhook not set"
+          exit 1
+        fi
+        
+        # Send the notification
         python send_discord_notification.py "🏖️ **Start of PTO!**
-        
-        Today is July 31st - Time to start your vacation! 🎉
-        
-        Enjoy your time off! 🌴☀️"
+
+Today is July 31st - Time to start your vacation! 🎉
+
+Enjoy your time off! 🌴☀️"
