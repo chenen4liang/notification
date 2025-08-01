@@ -16,7 +16,7 @@ from check_sec import check_for_month
 from send_discord_notification import send_discord_notification
 
 
-def check_and_notify(year_month, silent=False, notify_only_if_available=False, notification_type="data_available"):
+def check_and_notify(year_month, silent=False, notify_only_if_available=False):
     """
     Check SEC data for a specific month and send Discord notification
     
@@ -24,10 +24,9 @@ def check_and_notify(year_month, silent=False, notify_only_if_available=False, n
         year_month: String in format 'yyyy-mm' (e.g., '2025-06')
         silent: If True, suppress console output except for errors
         notify_only_if_available: If True, only send notification when data is available
-        notification_type: Type of notification (e.g., 'data_available', 'data_updated', 'reminder')
     
     Returns:
-        Tuple of (data_available: bool, notification_sent: bool)
+        True if data is available, False otherwise
     """
     if not silent:
         print(f"Checking SEC Form 13F data for {year_month}...")
@@ -53,35 +52,12 @@ def check_and_notify(year_month, silent=False, notify_only_if_available=False, n
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
     
     if has_data:
-        # Customize message based on notification type
-        if notification_type == "data_available":
-            emoji = "🟢"
-            status = "**AVAILABLE**"
-            color_text = "Data is now available"
-            message = f"{emoji} **SEC Form 13F Data {status}**\n\n"
-            message += f"✅ {color_text} for **{formatted_month}**\n"
-        elif notification_type == "data_updated":
-            emoji = "🔄"
-            status = "**UPDATED**"
-            color_text = "Data has been updated"
-            message = f"{emoji} **SEC Form 13F Data {status}**\n\n"
-            message += f"🔄 {color_text} for **{formatted_month}**\n"
-        elif notification_type == "reminder":
-            emoji = "⏰"
-            status = "**REMINDER**"
-            color_text = "Data is still available"
-            message = f"{emoji} **SEC Form 13F {status}**\n\n"
-            message += f"📌 {color_text} for **{formatted_month}**\n"
-        else:
-            # Default/custom type
-            emoji = "📊"
-            status = f"**{notification_type.upper()}**"
-            color_text = "Data is available"
-            message = f"{emoji} **SEC Form 13F {status}**\n\n"
-            message += f"📊 {color_text} for **{formatted_month}**\n"
-        
+        emoji = "🟢"
+        status = "**AVAILABLE**"
+        color_text = "Data is now available"
+        message = f"{emoji} **SEC Form 13F Data {status}**\n\n"
+        message += f"✅ {color_text} for **{formatted_month}**\n"
         message += f"📊 Month checked: `{year_month}`\n"
-        message += f"🔔 Notification type: `{notification_type}`\n"
         message += f"🕐 Checked at: {timestamp}\n\n"
         message += f"[View SEC Form 13F Data](https://www.sec.gov/data-research/sec-markets-data/form-13f-data-sets)"
     else:
@@ -119,7 +95,7 @@ def check_and_notify(year_month, silent=False, notify_only_if_available=False, n
         elif not notify_only_if_available or has_data:
             print("❌ Failed to send Discord notification")
     
-    return has_data, notification_sent
+    return has_data
 
 
 def check_multiple_months(months, silent=False):
@@ -268,7 +244,7 @@ Examples:
     # Process the checks
     if len(months_to_check) == 1:
         # Single month check
-        has_data, notification_sent = check_and_notify(months_to_check[0], args.silent, args.notify_only_if_available)
+        has_data = check_and_notify(months_to_check[0], args.silent, args.notify_only_if_available)
         sys.exit(0 if has_data else 1)
     else:
         # Multiple months check
