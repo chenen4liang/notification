@@ -30,8 +30,4 @@ jobs:
         fi
         
         # Send the notification
-        python send_discord_notification.py "🏖️ **Start of PTO!**
-
-Today is July 31st - Time to start your vacation! 🎉
-
-Enjoy your time off! 🌴☀️"
+        python send_discord_notification.py $'🏖️ **Start of PTO!**\n\nToday is July 31st - Time to start your vacation! 🎉\n\nEnjoy your time off! 🌴☀️'
