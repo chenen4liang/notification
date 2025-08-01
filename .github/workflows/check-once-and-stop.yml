@@ -1,0 +1,44 @@
+name: Check Once and Stop
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check-and-stop:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Check and notify
+      env:
+        discordChannel: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        if python check_sec.py 2025-07 | grep -q "true"; then
+          # Send notification
+          python check_and_notify.py 2025-07
+          
+          # Disable this workflow
+          echo "✅ Data found and notified. Disabling workflow..."
+          gh workflow disable "Check Once and Stop"
+          
+          # Send final message
+          python send_discord_notification.py "🛑 SEC monitoring has been automatically stopped after finding July 2025 data. Re-enable manually if needed."
+        else
+          echo "No data yet, will check again next hour"
+        fi
+    
+    - name: Setup GitHub CLI
+      if: success()
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        gh auth setup-git

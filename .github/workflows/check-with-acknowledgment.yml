@@ -1,0 +1,91 @@
+name: SEC Monitor with Acknowledgment
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Hourly
+  workflow_dispatch:
+
+jobs:
+  check-sec-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Restore acknowledgment status
+      uses: actions/cache@v4
+      with:
+        path: .acknowledgments
+        key: ack-2025-07-v1
+        restore-keys: ack-
+    
+    - name: Check and notify with acknowledgment logic
+      env:
+        discordChannel: ${{ secrets.DISCORD_WEBHOOK }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        mkdir -p .acknowledgments
+        MONTH="2025-07"
+        ACK_FILE=".acknowledgments/ack-${MONTH}"
+        NOTIFIED_FILE=".acknowledgments/notified-${MONTH}"
+        
+        echo "Checking SEC data for ${MONTH}..."
+        
+        # Check if data is available
+        if python check_sec.py ${MONTH} | grep -q "true"; then
+          echo "✅ Data is available for ${MONTH}"
+          
+          # Check if already acknowledged
+          if [ -f "${ACK_FILE}" ]; then
+            echo "✅ Already acknowledged on $(cat ${ACK_FILE})"
+            echo "No notification needed."
+          else
+            # Check when we last notified
+            SHOULD_NOTIFY=true
+            if [ -f "${NOTIFIED_FILE}" ]; then
+              LAST_NOTIFIED=$(cat ${NOTIFIED_FILE})
+              HOURS_AGO=$(( ($(date +%s) - $(date -d "${LAST_NOTIFIED}" +%s)) / 3600 ))
+              echo "Last notified ${HOURS_AGO} hours ago"
+              
+              # Only re-notify every 4 hours if not acknowledged
+              if [ ${HOURS_AGO} -lt 4 ]; then
+                SHOULD_NOTIFY=false
+                echo "⏰ Will remind again in $((4 - HOURS_AGO)) hours if not acknowledged"
+              fi
+            fi
+            
+            if [ "${SHOULD_NOTIFY}" = "true" ]; then
+              echo "📤 Sending notification with acknowledgment link..."
+              
+              # Send notification with acknowledgment button
+              python send_discord_notification.py "📊 **SEC Form 13F Data Available** ${NOTIFIED_FILE:+(Reminder)}
+
+July 2025 data is now available and requires acknowledgment.
+
+**Action Required:**
+Click here to acknowledge: https://github.com/${{ github.repository }}/actions/workflows/acknowledge-data.yml
+
+This notification will repeat every 4 hours until acknowledged."
+              
+              # Record notification time
+              date -u '+%Y-%m-%d %H:%M:%S UTC' > "${NOTIFIED_FILE}"
+            fi
+          fi
+        else
+          echo "❌ No data available for ${MONTH} yet"
+          # Reset if data disappears
+          rm -f "${ACK_FILE}" "${NOTIFIED_FILE}"
+        fi
+        
+        # Check if acknowledgment was recorded (from acknowledge-data.yml workflow)
+        # This would be set by the acknowledgment workflow
+        if [ -f ".acknowledgments/pending-ack-check" ]; then
+          echo "Checking for recent acknowledgments..."
+          # Would check artifacts or use GitHub API to verify acknowledgment
+        fi

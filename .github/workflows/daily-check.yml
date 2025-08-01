@@ -1,0 +1,25 @@
+name: Daily SEC Check
+
+on:
+  schedule:
+    - cron: '0 14 * * *'  # 2 PM UTC daily
+  workflow_dispatch:
+
+jobs:
+  daily-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Daily check and notify
+      env:
+        discordChannel: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        python check_and_notify.py 2025-07 --notify-only-if-available

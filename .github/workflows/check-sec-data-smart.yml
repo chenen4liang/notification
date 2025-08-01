@@ -1,0 +1,65 @@
+name: Smart SEC Monitor (No Repeats)
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Hourly
+  workflow_dispatch:
+    inputs:
+      force_notify:
+        description: 'Force notification even if already sent'
+        type: boolean
+        default: false
+
+jobs:
+  check-sec-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Restore notification history
+      uses: actions/cache@v4
+      with:
+        path: .notifications
+        key: notifications-v1
+        restore-keys: notifications-
+    
+    - name: Check and notify intelligently
+      env:
+        discordChannel: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        mkdir -p .notifications
+        MONTH="2025-07"
+        NOTIFICATION_FILE=".notifications/sent-${MONTH}"
+        
+        echo "Checking SEC data for ${MONTH}..."
+        
+        # Check if data is available
+        if python check_sec.py ${MONTH} | grep -q "true"; then
+          echo "✅ Data is available for ${MONTH}"
+          
+          # Check if we already notified
+          if [ -f "${NOTIFICATION_FILE}" ] && [ "${{ inputs.force_notify }}" != "true" ]; then
+            echo "📌 Already notified for ${MONTH} on $(cat ${NOTIFICATION_FILE})"
+            echo "Skipping notification (data still available but already notified)"
+          else
+            echo "📤 Sending notification..."
+            python check_and_notify.py ${MONTH}
+            date -u '+%Y-%m-%d %H:%M:%S UTC' > "${NOTIFICATION_FILE}"
+            echo "✅ Notification sent and recorded"
+          fi
+        else
+          echo "❌ No data available for ${MONTH} yet"
+          # If data disappears, reset notification flag
+          rm -f "${NOTIFICATION_FILE}"
+        fi
+        
+        # Show notification history
+        echo -e "\n📋 Notification History:"
+        ls -la .notifications/ 2>/dev/null || echo "No notifications sent yet"
