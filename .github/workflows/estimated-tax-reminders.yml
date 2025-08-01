@@ -1,0 +1,82 @@
+name: Estimated Tax Payment Reminders
+
+on:
+  schedule:
+    # Q1 reminder: April 1st (14 days before April 15th)
+    - cron: '0 9 1 4 *'
+    # Q2 reminder: June 1st (14 days before June 15th)
+    - cron: '0 9 1 6 *'
+    # Q3 reminder: September 1st (14 days before September 15th)
+    - cron: '0 9 1 9 *'
+    # Q4 reminder: January 1st (14 days before January 15th)
+    - cron: '0 9 1 1 *'
+  workflow_dispatch:  # Allow manual trigger for testing
+
+jobs:
+  send-estimated-tax-reminder:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Determine which quarter
+      id: quarter
+      run: |
+        MONTH=$(date +%m)
+        YEAR=$(date +%Y)
+        
+        case $MONTH in
+          04)
+            echo "quarter=Q1" >> $GITHUB_OUTPUT
+            echo "period=January 1 - March 31" >> $GITHUB_OUTPUT
+            echo "due_date=April 15th" >> $GITHUB_OUTPUT
+            echo "tax_year=$YEAR" >> $GITHUB_OUTPUT
+            ;;
+          06)
+            echo "quarter=Q2" >> $GITHUB_OUTPUT
+            echo "period=April 1 - May 31" >> $GITHUB_OUTPUT
+            echo "due_date=June 15th" >> $GITHUB_OUTPUT
+            echo "tax_year=$YEAR" >> $GITHUB_OUTPUT
+            ;;
+          09)
+            echo "quarter=Q3" >> $GITHUB_OUTPUT
+            echo "period=June 1 - August 31" >> $GITHUB_OUTPUT
+            echo "due_date=September 15th" >> $GITHUB_OUTPUT
+            echo "tax_year=$YEAR" >> $GITHUB_OUTPUT
+            ;;
+          01)
+            echo "quarter=Q4" >> $GITHUB_OUTPUT
+            echo "period=September 1 - December 31" >> $GITHUB_OUTPUT
+            echo "due_date=January 15th" >> $GITHUB_OUTPUT
+            echo "tax_year=$((YEAR-1))" >> $GITHUB_OUTPUT
+            ;;
+        esac
+    
+    - name: Send estimated tax reminder
+      env:
+        discordChannel: ${{ secrets.DISCORD_WEBHOOK }}
+      run: |
+        python send_discord_notification.py "💰 **Estimated Tax Payment Reminder**
+
+⏰ **2 WEEKS until ${{ steps.quarter.outputs.quarter }} payment is due!**
+
+📅 **Due Date:** ${{ steps.quarter.outputs.due_date }}
+📊 **Quarter:** ${{ steps.quarter.outputs.quarter }} ${{ steps.quarter.outputs.tax_year }}
+📆 **Period:** ${{ steps.quarter.outputs.period }}
+
+💡 **Remember:**
+• This covers both Federal and California estimated taxes
+• Payment due even if you haven't calculated exact amount
+• Can pay online at:
+  - Federal: https://www.irs.gov/payments
+  - California: https://www.ftb.ca.gov/pay/
+
+⚠️ **Note:** If the 15th falls on a weekend/holiday, the due date is the next business day.
+
+Set a reminder to make your payment!"
