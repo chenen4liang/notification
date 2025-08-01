@@ -61,22 +61,9 @@ jobs:
     - name: Send estimated tax reminder
       env:
         discordChannel: ${{ secrets.DISCORD_WEBHOOK }}
+        QUARTER: ${{ steps.quarter.outputs.quarter }}
+        DUE_DATE: ${{ steps.quarter.outputs.due_date }}
+        TAX_YEAR: ${{ steps.quarter.outputs.tax_year }}
+        PERIOD: ${{ steps.quarter.outputs.period }}
       run: |
-        python send_discord_notification.py "💰 **Estimated Tax Payment Reminder**
-
-⏰ **2 WEEKS until ${{ steps.quarter.outputs.quarter }} payment is due!**
-
-📅 **Due Date:** ${{ steps.quarter.outputs.due_date }}
-📊 **Quarter:** ${{ steps.quarter.outputs.quarter }} ${{ steps.quarter.outputs.tax_year }}
-📆 **Period:** ${{ steps.quarter.outputs.period }}
-
-💡 **Remember:**
-• This covers both Federal and California estimated taxes
-• Payment due even if you haven't calculated exact amount
-• Can pay online at:
-  - Federal: https://www.irs.gov/payments
-  - California: https://www.ftb.ca.gov/pay/
-
-⚠️ **Note:** If the 15th falls on a weekend/holiday, the due date is the next business day.
-
-Set a reminder to make your payment!"
+        python send_discord_notification.py $'💰 **Estimated Tax Payment Reminder**\n\n⏰ **2 WEEKS until '"${QUARTER}"' payment is due!**\n\n📅 **Due Date:** '"${DUE_DATE}"'\n📊 **Quarter:** '"${QUARTER}"' '"${TAX_YEAR}"'\n📆 **Period:** '"${PERIOD}"'\n\n💡 **Remember:**\n• This covers both Federal and California estimated taxes\n• Payment due even if you haven'\''t calculated exact amount\n• Can pay online at:\n  - Federal: https://www.irs.gov/payments\n  - California: https://www.ftb.ca.gov/pay/\n\n⚠️ **Note:** If the 15th falls on a weekend/holiday, the due date is the next business day.\n\nSet a reminder to make your payment!'
