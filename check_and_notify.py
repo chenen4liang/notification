@@ -225,8 +225,9 @@ Examples:
             print(f"Error: Invalid month format '{month}'. Please use yyyy-mm format.")
             sys.exit(2)
     
-    # Source bashrc to get environment variables
-    bashrc_path = '/workspaces/notification/bashrc'
+    # Source bashrc to get environment variables (if exists)
+    # You can create a .bashrc file in the project root with environment variables
+    bashrc_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.bashrc')
     if os.path.exists(bashrc_path):
         source_cmd = f'source {bashrc_path} && env'
         proc = subprocess.Popen(['bash', '-c', source_cmd], stdout=subprocess.PIPE)

@@ -42,4 +42,4 @@ jobs:
         INSTALLMENT_TYPE: ${{ steps.installment.outputs.installment }}
         DELINQUENT_DATE: ${{ steps.installment.outputs.delinquent }}
       run: |
-        python send_discord_notification.py $'🏠 **Property Tax Reminder**\n\n📅 **'"${INSTALLMENT_NUMBER}"' Installment Due Today!**\n\nToday is the due date for your property tax '"${INSTALLMENT_TYPE}"' installment.\n\n⚠️ **Important Dates:**\n• Due: **Today**\n• Delinquent: **'"${DELINQUENT_DATE}"'** (5:00 PM)\n• Penalty: 10% if paid after delinquent date\n\n💡 You have until '"${DELINQUENT_DATE}"' to pay without penalty.\n\n🔗 Pay online at: https://sanmateo-ca.county-taxes.com/'
+        python send_discord_notification.py $'🏠 **Property Tax Reminder**\n\n📅 **'"${INSTALLMENT_NUMBER}"' Installment Due Today!**\n\nToday is the due date for your property tax '"${INSTALLMENT_TYPE}"' installment.\n\n⚠️ **Important Dates:**\n• Due: **Today**\n• Delinquent: **'"${DELINQUENT_DATE}"'** (5:00 PM)\n• Penalty: 10% if paid after delinquent date\n\n💡 You have until '"${DELINQUENT_DATE}"' to pay without penalty.\n\n🔗 Check your county tax collector website for payment options.'
